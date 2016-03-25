@@ -1,0 +1,8 @@
+.DS_Store
+sftp-config.json
+*.o
+*.exe
+*.dmg
+*.app
+
+file_glitcher
