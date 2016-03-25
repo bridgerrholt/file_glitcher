@@ -3,12 +3,14 @@
 #include <iterator>
 #include <algorithm>
 #include <string>
+
 #include <vector>
 #include <streambuf>
 #include <time.h>
 #include <exception>
 
 #include "dependencies/patch/stoi.cpp"
+#include "dependencies/patch/stof.cpp"
 #include "dependencies/rand_double.cpp"
 #include "dependencies/rand_range.cpp"
 
@@ -38,7 +40,7 @@ int main(int argc, char* argv[])
 	if (argc < 2 || argc > 3) {
 		std::cout <<
 			"Incorrect amount of arguments.\n"
-			"Expecting \"<rand max> -seed-\"\n";
+			"Expecting \"<glitchness ([1, 100])> -seed-\"\n";
 		return 0;
 	}
 
@@ -52,15 +54,21 @@ int main(int argc, char* argv[])
 	std::string inFileName = folder + directoryLines.at(1);
 	std::string outFileName = folder + directoryLines.at(2);
 
-	// Determines the range of random values for inserting splices,
-	// increasing it decreases the amount of glitch.
-	std::size_t randMax;
+	// Determines what to set randMax to. Increasing decreases randMax.
+	float probability;
 	// Seeds the random value, by default is the time.
 	std::size_t seed;
 
-	// Verifies the passed arguments are integers.
+	// Determines the range of random values for inserting splices,
+	// increasing it decreases the amount of glitch.
+	std::size_t randMax;
+
+	// Verifies the passed arguments are correct
 	try {
-		randMax = patch::stoi(argv[1]);
+		probability = patch::stof(argv[1]);
+		if (probability < 1 || probability > 100) {
+			throw std::runtime_error("Glitchness must be in [1, 100]");
+		}
 
 		// Set the seed to the current time if a different number was
 		// not specified.
@@ -71,6 +79,7 @@ int main(int argc, char* argv[])
 	}
 	catch (std::exception& e) {
 		std::cout << e.what() << '\n';
+		return 1;
 	}
 
 	// Set the random seed, either to the passed argument or
@@ -87,6 +96,12 @@ int main(int argc, char* argv[])
 	while (inFile >> std::noskipws >> currentChar) {
 		inFileChars.push_back(currentChar);
 	}
+
+	// Set the rand max based on the file length.
+	randMax = (1.0 - probability*0.01)/(probability*0.1) * inFileChars.size();
+	if (randMax == 0)
+		randMax = 1;
+	std::cout << "randMax is " << randMax << '\n';
 
 	// An empty vector for the binary output.
 	std::vector<char> outFileChars;
@@ -134,6 +149,9 @@ int main(int argc, char* argv[])
 		remainingRanges.erase(remainingRanges.begin()+index);
 	}
 
+	// Compares the new list to the old list, informs the user if
+	// no changes took place.
+	bool changesOccured = false;
 	// Loop through the randomized list of ranges.
 	for (auto i = randomRanges.begin(); i != randomRanges.end(); ++i) {
 		// For each range, loop through its marked section within the
@@ -142,6 +160,15 @@ int main(int argc, char* argv[])
 			j != inFileChars.begin()+i->max+1; ++j) {
 			outFileChars.push_back(*j);
 		}
+
+		// Changes occured if a range is different.
+		std::size_t index = i - randomRanges.begin();
+		if (i->min != ranges[index].min || i->max != ranges[index].max)
+			changesOccured = true;
+	}
+
+	if (!changesOccured) {
+		std::cout << "Note: No changes occured.\n";
 	}
 
 	// Open the ouput file.
