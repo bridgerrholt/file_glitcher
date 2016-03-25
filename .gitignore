@@ -6,3 +6,4 @@ sftp-config.json
 *.app
 
 file_glitcher
+tests

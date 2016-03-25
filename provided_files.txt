@@ -1,0 +1,3 @@
+examples/example_000/
+example_000 IN n-i.raw
+example_000 OUT n-i.raw
