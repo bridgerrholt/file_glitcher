@@ -22,70 +22,16 @@ public:
 	std::size_t max;
 };
 
-
-
-int main(int argc, char* argv[])
+void glitchFile(
+	const std::string& inFileName,
+	const std::string& outFileName,
+	const float probability,
+	const std::size_t seed)
 {
-	// Loads the file that indicated which image to load and what to
-	// save the ouput as.
-	std::ifstream inDirectories("provided_files.txt");
-	std::vector<std::string> directoryLines;
-	std::string line;
-	// Get all the lines, there should be 3.
-	while (std::getline(inDirectories, line)) {
-		directoryLines.push_back(line);
-	}
-
-	// Fail if they don't pass an acceptable amount of arguments.
-	if (argc < 2 || argc > 3) {
-		std::cout <<
-			"Incorrect amount of arguments.\n"
-			"Expecting \"<glitchness ([1, 100])> -seed-\"\n";
-		return 0;
-	}
-
-	// The first line is the main directory, uses the current directory if
-	// passed a period.
-	std::string folder = directoryLines.at(0);
-	if (folder == ".") {
-		folder = "";
-	}
-
-	std::string inFileName = folder + directoryLines.at(1);
-	std::string outFileName = folder + directoryLines.at(2);
-
-	// Determines what to set randMax to. Increasing decreases randMax.
-	float probability;
-	// Seeds the random value, by default is the time.
-	std::size_t seed;
-
-	// Determines the range of random values for inserting splices,
-	// increasing it decreases the amount of glitch.
-	std::size_t randMax;
-
-	// Verifies the passed arguments are correct
-	try {
-		probability = patch::stof(argv[1]);
-		if (probability < 1 || probability > 100) {
-			throw std::runtime_error("Glitchness must be in [1, 100]");
-		}
-
-		// Set the seed to the current time if a different number was
-		// not specified.
-		if (argc >= 3)
-			seed = patch::stoi(argv[2]);
-		else
-			seed = time(0);
-	}
-	catch (std::exception& e) {
-		std::cout << e.what() << '\n';
-		return 1;
-	}
-
 	// Set the random seed, either to the passed argument or
 	// to the current time.
 	srand(seed);
-
+	
 	// Load the input as a binary file stream.
 	std::ifstream inFile(inFileName.c_str(),
 		std::ios_base::in | std::ios_base::binary);
@@ -97,11 +43,17 @@ int main(int argc, char* argv[])
 		inFileChars.push_back(currentChar);
 	}
 
+	// Determines the range of random values for inserting splices,
+	// increasing it decreases the amount of glitch.
+	std::size_t randMax;
+
 	// Set the rand max based on the file length.
 	randMax = (1.0 - probability*0.01)/(probability*0.1) * inFileChars.size();
 	if (randMax == 0)
 		randMax = 1;
-	std::cout << "randMax is " << randMax << '\n';
+
+	// Give information on the current file.
+	std::cout << inFileName << '\n';
 
 	// An empty vector for the binary output.
 	std::vector<char> outFileChars;
@@ -178,6 +130,91 @@ int main(int argc, char* argv[])
 	for (auto i = 0; i < outFileChars.size(); ++i) {
 		outFile << outFileChars[i];
 	}
+}
+
+
+int main(int argc, char* argv[])
+{
+	// Fail if they don't pass an acceptable amount of arguments.
+	if (argc < 2 || argc > 3) {
+		std::cout <<
+			"Incorrect amount of arguments.\n"
+			"Expecting \"<glitchness ([1, 100])> -seed-\"\n";
+		return 0;
+	}
+
+	// Determines what to set randMax to. Increasing decreases randMax.
+	float probability;
+	// Seeds the random value, by default is the time.
+	std::size_t seed;
+
+
+	// Verifies the passed arguments are correct
+	try {
+		probability = patch::stof(argv[1]);
+		if (probability < 1 || probability > 100) {
+			throw std::runtime_error("Glitchness must be in [1, 100]");
+		}
+
+		// Set the seed to the current time if a different number was
+		// not specified.
+		if (argc >= 3)
+			seed = patch::stoi(argv[2]);
+		else
+			seed = time(0);
+	}
+	catch (std::exception& e) {
+		std::cout << e.what() << '\n';
+		return 1;
+	}
+
+
+	// Loads the file that indicated which image to load and what to
+	// save the ouput as.
+	std::ifstream inDirectories("provided_files.txt");
+	std::vector<std::string> directoryLines;
+	std::string line;
+	// Get all the lines, it should have sets of 3 lines,
+	// with a blank line in between each set.
+	while (std::getline(inDirectories, line)) {
+		directoryLines.push_back(line);
+	}
+
+	try {
+		// Each loop deals with a single set.
+		for (auto i = directoryLines.begin();
+			i != directoryLines.end(); ++i) {
+
+			// The first line is the main directory,
+			// uses the current directory if passed a period.
+			std::string folder = *i;
+			if (folder == ".") {
+				folder = "";
+			}
+
+			if (++i == directoryLines.end())
+				throw std::runtime_error("No inFileName given");
+			std::string inFileName = folder + *i;
+
+			if (++i == directoryLines.end())
+				throw std::runtime_error("No outFileName given");
+			std::string outFileName = folder + *i;
+
+			glitchFile(inFileName, outFileName, probability, seed);
+
+			// Skip the empty line.
+			if (++i == directoryLines.end())
+				break;
+
+		}
+	}
+	catch (std::exception& e) {
+		std::cout << e.what() << '\n';
+		return 1;
+	}
+
+
+
 
 	return 0;
 }
