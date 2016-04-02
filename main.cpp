@@ -21,9 +21,9 @@
 // Used to mark areas in a file (or array for that matter).
 class Range
 {
-public:
-	std::size_t min;
-	std::size_t max;
+  public:
+    std::size_t min;
+    std::size_t max;
 };
 
 void glitchFile(const GlitchArguments& arguments)
@@ -149,48 +149,58 @@ void glitchFile(const GlitchArguments& arguments)
 
 int main(int argc, char* argv[])
 {
-	// Loads the file that indicated which image to load and what to
-	// save the ouput as.
-	std::ifstream inDirectories("provided_files.txt");
-	std::vector<std::string> directoryLines;
-	std::string line;
-	// Get all the lines, it should have sets of 3 lines,
-	// with a blank line in between each set.
-	while (std::getline(inDirectories, line)) {
-		directoryLines.push_back(line);
-	}
+  try {
+    // Is created once, modified as the user's file is read.
+    VariableManager variableManager;
 
-	try {
-		VariableManager variableManager;
-		GlitchArguments glitchArguments;
+    // Is recreated everytime an output file is declared in
+    // the user's file.
+    GlitchArguments glitchArguments;
 
-		for (auto i = directoryLines.begin();
-			i != directoryLines.end(); ++i) {
+    // Loads the user's file, it determines which files to load and
+    // how to process them.
+    std::ifstream inDirectories("provided_files.txt");
 
-			for (auto j = i->begin(); j < i->end(); ++j) {
-				if (*j == '-' || *j == '?' || *j == '!') {
-					if (*j == '-')
-						++j;
-					InputOption inputOption = InputOption(*i, j);
+    // Reads the user's file line by line.
+    std::string line;
+    while (std::getline(inDirectories, line)) {
+      for (auto i = line.begin(); i < line.end(); ++i) {
 
-					//std::cout << inputOption.signature << " " << inputOption.data << '\n';
-					//std::cout << (j == i->end()) << ' ' << (j > i->end()) << '\n';
+        // Nothing is done unless the current character is
+        // one of the input-starting characters.
+        if (*i == '-' || *i== '?' || *i == '!') {
 
-					if (variableManager.takeInput(
-						inputOption, glitchArguments)) {
-						//std::cout << glitchArguments.outputFileName << '\n';
-						glitchFile(glitchArguments);
-					}
+          // Advance if it's a dash, since dashes denote that the
+          // next character is the signature; '?' and '!' stand as
+          // signatures on their own.
+          if (*i == '-')
+            ++i;
 
-				}
-			}
+          // Control over the iterator is taken during the
+          // InputOption constructor.
+          InputOption inputOption = InputOption(line, i);
 
-		}
-	}
-	catch (std::exception& e) {
-		std::cout << e.what() << '\n';
-		return 1;
-	}
+          /*
+          std::cout <<
+          inputOption.signature << " " <<
+          inputOption.data << '\n';
+          */
+
+          // If the current input option declares an output file,
+          // the passed GlitchArguments will be modified and passed to
+          // the processing function.
+          if (variableManager.takeInput(inputOption, glitchArguments))
+            glitchFile(glitchArguments);
+
+        }
+      }
+    }
+  }
+
+  catch (std::exception& e) {
+    std::cout << "Failure:\n" << e.what() << '\n';
+    return 1;
+  }
 
 
 	/*// Fail if they don't pass an acceptable amount of arguments.
@@ -275,5 +285,5 @@ int main(int argc, char* argv[])
 
 
 
-	return 0;
+  return 0;
 }

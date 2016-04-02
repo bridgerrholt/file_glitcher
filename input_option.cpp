@@ -4,59 +4,71 @@
 #include <stdexcept>
 
 InputOption::InputOption(
-	const std::string& inputString,
-	std::string::iterator& current) :
+  const std::string& inputString,
+  std::string::iterator& current) :
 
-	data("")
+  data("")
 {
-	if (current >= inputString.end() || *current == ' ') {
-		throw std::runtime_error("Isolated hyphen " + inputString);
-	}
+  // Fail if there is no signature character. This is expected to
+  // only happen when a hyphen doesn't have a signature character after it.
+  if (current >= inputString.end() || *current == ' ')
+    throw std::runtime_error("Hyphen with no signature");
 
-	signature = *current;
-	++current;
+  // The current character
+  signature = *current;
+  ++current;
 
-	// Check if the input starts with a quotation.
-	bool inQuotes = false;
-	char quoteKind;
-	if (current != inputString.end() &&
-		(*current == '"' || *current == '\'')) {
-		inQuotes = true;
-		quoteKind = *current;
-		++current;
-	}
+  // Check if the input starts with a quotation.
+  bool inQuotes = false;
+  char quoteKind;
+  // No error is thrown if no text is actually inputted.
+  if (current != inputString.end() &&
+    (*current == '"' || *current == '\'')) {
+    inQuotes = true;
+    quoteKind = *current;
 
-	// Capture the input until the ending quotation or a space.
-	while (true) {
-		if (current == inputString.end()) {
-			if (inQuotes) {
-				throw std::runtime_error("Quotated text ended prematurely");
-			}
-			break;
-		}
+    // Advance to the text in between the quotations.
+    ++current;
+  }
 
-		if (*current == '\\') {
-			++current;
-			if (current == inputString.end()) {
-				throw std::runtime_error(
-					"Backslash with no following character");
-			}
-			else {
-				data += *current;
-			}
-		}
+  // Capture the input until either an ending quotation or a space.
+  while (true) {
+    if (current == inputString.end()) {
+      // Fail if an ending quotation was never found.
+      if (inQuotes)
+        throw std::runtime_error("Quotated text ended prematurely");
 
-		else {
-			if (inQuotes) {
-				if (*current == quoteKind) break;
-			}
-			else {
-				if (*current == ' ') break;
-			}
+      // Further guarantees no infinite loops.
+      break;
+    }
 
-			data += *current;
-		}
-	
-		++current;
-	}
+    // A backslash indicates a special character.
+    if (*current == '\\') {
+      ++current;
+
+      if (current == inputString.end())
+        throw std::runtime_error("Backslash with no character after");
+      else
+        // Simply add what comes after the backslash; this way
+        // backslashes/spaces/quotations can be represented.
+        data += *current;
+    }
+
+    else {
+      // Break if found the ending quotation,
+      if (inQuotes) {
+        if (*current == quoteKind) break;
+      }
+
+      // or the ending space.
+      else {
+        if (*current == ' ') break;
+      }
+
+      // Add the character since it proves to be simply text.
+      data += *current;
+    }
+
+    ++current;
+  }
 }

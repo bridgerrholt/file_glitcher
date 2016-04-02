@@ -9,28 +9,34 @@ class GlitchArguments;
 
 class VariableManager
 {
-public:
-	VariableManager();
+  public:
+    VariableManager();
 
-	class Variable
-	{
-	public:
-		Variable();
+    // Returns true if a glitch operation should be performed.
+    bool takeInput(
+      const InputOption& inputOption,
+      GlitchArguments& outGlitchArguments);
 
-		std::string data;
-		bool isSet;
-	};
+  private:
+    // Very simple structure for holding information about a
+    // specific variable. All Variable objects should be constructed in
+    // VariableManager's constructor.
+    class Variable
+    {
+      public:
+        Variable();
 
-	// Returns true if a glitch operation should be performed.
-	bool takeInput(
-		const InputOption& inputOption,
-		GlitchArguments& outGlitchArguments);
+        std::string data;
+        bool isSet;
+    };
 
-private:
-	std::map<char, Variable> variables_;
+    // The key is the signature used for the specific variable.
+    std::map<char, Variable> variables_;
 
-	std::size_t startingSeed_;
-	std::size_t currentSeed_;
+    // The seed derived from the construction.
+    std::size_t startingSeed_;
+    // The useable seed, incremented after every use.
+    std::size_t currentSeed_;
 
 };
 
