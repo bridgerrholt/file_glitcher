@@ -1,3 +1,6 @@
+// Handles a list of objects meant to represent all the
+// variables the user can affect.
+
 #ifndef VARIABLE_MANAGER_H
 #define VARIABLE_MANAGER_H
 

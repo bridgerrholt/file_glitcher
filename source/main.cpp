@@ -9,10 +9,7 @@
 #include <time.h>
 #include <exception>
 
-#include "dependencies/patch/stoi.cpp"
-#include "dependencies/patch/stof.cpp"
-#include "dependencies/rand_double.cpp"
-#include "dependencies/rand_range.cpp"
+#include <rand_range.h>
 
 #include "input_option.h"
 #include "glitch_arguments.h"
