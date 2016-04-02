@@ -14,6 +14,10 @@
 #include "dependencies/rand_double.cpp"
 #include "dependencies/rand_range.cpp"
 
+#include "input_option.h"
+#include "glitch_arguments.h"
+#include "variable_manager.h"
+
 // Used to mark areas in a file (or array for that matter).
 class Range
 {
@@ -22,16 +26,24 @@ public:
 	std::size_t max;
 };
 
-void glitchFile(
-	const std::string& inFileName,
-	const std::string& outFileName,
-	const float probability,
-	const std::size_t seed)
+void glitchFile(const GlitchArguments& arguments)
 {
+	
+	std::string inFileName =
+		arguments.folder + arguments.inputFileName + arguments.extension;
+	std::string outFileName =
+		arguments.folder + arguments.outputFileName + arguments.extension;
+
+	// Give information on the current file.
+	std::cout <<
+		"!"   << outFileName <<
+		" -g" << arguments.probability <<
+		" -s" << arguments.seed;
+
 	// Set the random seed, either to the passed argument or
 	// to the current time.
-	srand(seed);
-	
+	srand(arguments.seed);
+
 	// Load the input as a binary file stream.
 	std::ifstream inFile(inFileName.c_str(),
 		std::ios_base::in | std::ios_base::binary);
@@ -48,12 +60,12 @@ void glitchFile(
 	std::size_t randMax;
 
 	// Set the rand max based on the file length.
-	randMax = (1.0 - probability*0.01)/(probability*0.1) * inFileChars.size();
+	randMax =
+		(1.0 - arguments.probability*0.01)/(arguments.probability*0.1) *
+		inFileChars.size();
 	if (randMax == 0)
 		randMax = 1;
 
-	// Give information on the current file.
-	std::cout << inFileName << '\n';
 
 	// An empty vector for the binary output.
 	std::vector<char> outFileChars;
@@ -120,7 +132,7 @@ void glitchFile(
 	}
 
 	if (!changesOccured) {
-		std::cout << "Note: No changes occured.\n";
+		std::cout << "\nNote: No changes occured.";
 	}
 
 	// Open the ouput file.
@@ -130,16 +142,62 @@ void glitchFile(
 	for (auto i = 0; i < outFileChars.size(); ++i) {
 		outFile << outFileChars[i];
 	}
+
+	std::cout << '\n';
 }
 
 
 int main(int argc, char* argv[])
 {
-	// Fail if they don't pass an acceptable amount of arguments.
+	// Loads the file that indicated which image to load and what to
+	// save the ouput as.
+	std::ifstream inDirectories("provided_files.txt");
+	std::vector<std::string> directoryLines;
+	std::string line;
+	// Get all the lines, it should have sets of 3 lines,
+	// with a blank line in between each set.
+	while (std::getline(inDirectories, line)) {
+		directoryLines.push_back(line);
+	}
+
+	try {
+		VariableManager variableManager;
+		GlitchArguments glitchArguments;
+
+		for (auto i = directoryLines.begin();
+			i != directoryLines.end(); ++i) {
+
+			for (auto j = i->begin(); j < i->end(); ++j) {
+				if (*j == '-' || *j == '?' || *j == '!') {
+					if (*j == '-')
+						++j;
+					InputOption inputOption = InputOption(*i, j);
+
+					//std::cout << inputOption.signature << " " << inputOption.data << '\n';
+					//std::cout << (j == i->end()) << ' ' << (j > i->end()) << '\n';
+
+					if (variableManager.takeInput(
+						inputOption, glitchArguments)) {
+						//std::cout << glitchArguments.outputFileName << '\n';
+						glitchFile(glitchArguments);
+					}
+
+				}
+			}
+
+		}
+	}
+	catch (std::exception& e) {
+		std::cout << e.what() << '\n';
+		return 1;
+	}
+
+
+	/*// Fail if they don't pass an acceptable amount of arguments.
 	if (argc < 2 || argc > 3) {
 		std::cout <<
 			"Incorrect amount of arguments.\n"
-			"Expecting \"<glitchness ([1, 100])> -seed-\"\n";
+			"Expecting \"<glitchness [1, 100]> -seed-\"\n";
 		return 0;
 	}
 
@@ -201,6 +259,7 @@ int main(int argc, char* argv[])
 			std::string outFileName = folder + *i;
 
 			glitchFile(inFileName, outFileName, probability, seed);
+			++seed;
 
 			// Skip the empty line.
 			if (++i == directoryLines.end())
@@ -211,7 +270,7 @@ int main(int argc, char* argv[])
 	catch (std::exception& e) {
 		std::cout << e.what() << '\n';
 		return 1;
-	}
+	}*/
 
 
 

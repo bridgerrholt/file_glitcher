@@ -1,3 +1,21 @@
-examples/example_000/
-example_000 IN n-i.raw
-example_000 OUT n-i.raw
+-fexamples/example_000/ -x.raw
+
+?example_000\ IN\ n-i
+
+-g25
+!example_000\ OUT\ n-i\ g025
+
+-g50
+!example_000\ OUT\ n-i\ g050
+
+-g75
+!example_000\ OUT\ n-i\ g075
+
+-g90
+!example_000\ OUT\ n-i\ g090
+
+-g95
+!example_000\ OUT\ n-i\ g095
+
+-g100
+!example_000\ OUT\ n-i\ g100
